@@ -28,3 +28,5 @@ Run the server:
 ```sh
 dotnet run --project src/SmartMeter.Server
 ```
+
+The server listens on `http://localhost:5080`.
