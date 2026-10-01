@@ -30,3 +30,11 @@ dotnet run --project src/SmartMeter.Server
 ```
 
 The server listens on `http://localhost:5080`.
+
+## Run with Docker
+
+```sh
+docker compose up --build
+```
+
+The server is then available on `http://localhost:5080`.

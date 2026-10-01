@@ -1,0 +1,10 @@
+name: smart-meter
+
+services:
+    server:
+        build:
+            context: .
+            dockerfile: src/SmartMeter.Server/Dockerfile
+        ports:
+            - "5080:8080"
+        restart: unless-stopped
