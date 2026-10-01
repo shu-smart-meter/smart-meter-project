@@ -1,16 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
 
 using SmartMeter.Api.Models;
+using SmartMeter.Api.Responses;
 
 namespace SmartMeter.Api.Controllers;
 
-[ApiController]
 [Route("")]
-public sealed class RootController : ControllerBase
+public sealed class RootController : BaseApiController
 {
     [HttpGet]
-    public GreetingResponse Get()
+    public ActionResult<ApiResponse<GreetingResponse>> Get()
     {
-        return new GreetingResponse { Message = "Hello World!" };
+        return Success(new GreetingResponse { Message = "Hello World!" });
     }
 }
