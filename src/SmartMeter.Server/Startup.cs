@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 
+using SmartMeter.Api.Filters;
 using SmartMeter.Api.HealthChecks;
 using SmartMeter.Api.Middleware;
 
@@ -13,7 +14,9 @@ public sealed class Startup
         services.AddControllers(options =>
         {
             options.Filters.Add(new ProducesAttribute("application/json"));
+            options.Filters.Add<ApiResponseResultFilter>();
         });
+        // nothing writes problem details anymore but UseExceptionHandler() wont start without it
         services.AddProblemDetails();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddHealthChecks();
@@ -23,12 +26,7 @@ public sealed class Startup
     {
         app.UseExceptionHandler();
         // always json; the default handler sends plain text if the client asks for text
-        app.UseStatusCodePages(context =>
-        {
-            var httpContext = context.HttpContext;
-
-            return Results.Problem(statusCode: httpContext.Response.StatusCode).ExecuteAsync(httpContext);
-        });
+        app.UseStatusCodePages(StatusCodeResponseWriter.WriteAsync);
 
         app.MapControllers();
         app.MapHealthChecks("/health", new HealthCheckOptions
