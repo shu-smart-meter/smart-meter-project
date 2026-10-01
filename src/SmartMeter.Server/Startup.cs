@@ -20,7 +20,13 @@ public sealed class Startup
     public void Configure(WebApplication app)
     {
         app.UseExceptionHandler();
-        app.UseStatusCodePages();
+        // always json; the default handler sends plain text if the client asks for text
+        app.UseStatusCodePages(context =>
+        {
+            var httpContext = context.HttpContext;
+
+            return Results.Problem(statusCode: httpContext.Response.StatusCode).ExecuteAsync(httpContext);
+        });
 
         app.MapControllers();
         app.MapHealthChecks("/health");
