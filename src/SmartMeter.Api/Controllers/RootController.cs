@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 
+using SmartMeter.Api.Models;
+
 namespace SmartMeter.Api.Controllers;
 
 [ApiController]
@@ -7,8 +9,8 @@ namespace SmartMeter.Api.Controllers;
 public sealed class RootController : ControllerBase
 {
     [HttpGet]
-    public string Get()
+    public GreetingResponse Get()
     {
-        return "Hello World!";
+        return new GreetingResponse { Message = "Hello World!" };
     }
 }
