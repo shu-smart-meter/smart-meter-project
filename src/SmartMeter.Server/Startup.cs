@@ -20,6 +20,7 @@ public sealed class Startup
     public void Configure(WebApplication app)
     {
         app.UseExceptionHandler();
+        app.UseStatusCodePages();
 
         app.MapControllers();
         app.MapHealthChecks("/health");
