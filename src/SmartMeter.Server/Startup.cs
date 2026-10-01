@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 
+using SmartMeter.Api.HealthChecks;
 using SmartMeter.Api.Middleware;
 
 namespace SmartMeter.Server;
@@ -29,6 +31,9 @@ public sealed class Startup
         });
 
         app.MapControllers();
-        app.MapHealthChecks("/health");
+        app.MapHealthChecks("/health", new HealthCheckOptions
+        {
+            ResponseWriter = HealthCheckResponseWriter.WriteAsync,
+        });
     }
 }
