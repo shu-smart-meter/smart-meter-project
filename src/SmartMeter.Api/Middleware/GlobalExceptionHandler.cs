@@ -2,17 +2,20 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
+using SmartMeter.Api.Responses;
+
 namespace SmartMeter.Api.Middleware;
 
+// catches anything a controller throws and sends it back in the same envelope as everything else
+// writes the json itself instead of going through problem details, so the accept header cant change the format
+// why: https://learn.microsoft.com/aspnet/core/fundamentals/error-handling#iexceptionhandler
 public sealed class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
-    private readonly IProblemDetailsService _problemDetailsService;
 
-    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IProblemDetailsService problemDetailsService)
+    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
     {
         _logger = logger;
-        _problemDetailsService = problemDetailsService;
     }
 
     public async ValueTask<bool> TryHandleAsync(
@@ -26,17 +29,14 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             httpContext.Request.Method,
             httpContext.Request.Path);
 
-        httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        var envelope = ApiResponse.Failure(
+            StatusCodes.Status500InternalServerError,
+            ApiErrorCode.InternalError,
+            "An unexpected error occurred");
 
-        return await _problemDetailsService.TryWriteAsync(new ProblemDetailsContext
-        {
-            HttpContext = httpContext,
-            Exception = exception,
-            ProblemDetails =
-            {
-                Title = "An unexpected error occurred",
-                Status = StatusCodes.Status500InternalServerError,
-            },
-        });
+        httpContext.Response.StatusCode = envelope.Status;
+        await httpContext.Response.WriteAsJsonAsync(envelope, cancellationToken);
+
+        return true;
     }
 }

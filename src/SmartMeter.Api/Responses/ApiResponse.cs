@@ -6,4 +6,14 @@ public static class ApiResponse
     {
         return new ApiResponse<T> { Ok = true, Status = status, Response = response };
     }
+
+    public static ApiResponse<ApiError> Failure(int status, ApiErrorCode code, string message)
+    {
+        return new ApiResponse<ApiError>
+        {
+            Ok = false,
+            Status = status,
+            Response = new ApiError { Code = code, Message = message },
+        };
+    }
 }
