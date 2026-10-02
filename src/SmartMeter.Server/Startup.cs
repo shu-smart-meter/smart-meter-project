@@ -3,7 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 
 using SmartMeter.Api.Filters;
 using SmartMeter.Api.HealthChecks;
+using SmartMeter.Api.Hubs;
 using SmartMeter.Api.Middleware;
+using SmartMeter.Implementations;
+using SmartMeter.Model;
 
 namespace SmartMeter.Server;
 
@@ -20,6 +23,17 @@ public sealed class Startup
         services.AddProblemDetails();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddHealthChecks();
+
+        // one shared store so every meter reads and writes the same file
+        // the path comes from config; appsettings.json sets a default
+        services.AddSingleton<IReadingStore>(
+            provider => new JsonReadingStore(GetStoragePath(provider)));
+
+        // both are stateless, so one instance is enough
+        services.AddSingleton<IVerificationService, VerificationService>();
+        services.AddSingleton<IBillingService, BillingService>();
+
+        services.AddSignalR();
     }
 
     public void Configure(WebApplication app)
@@ -33,5 +47,22 @@ public sealed class Startup
         {
             ResponseWriter = HealthCheckResponseWriter.WriteAsync,
         });
+
+        // the one endpoint every meter connects to
+        app.MapHub<MeterHub>("/hubs/meters");
+    }
+
+    // resolves the storage path from config, falling back to a file next to the app
+    private static string GetStoragePath(IServiceProvider provider)
+    {
+        IConfiguration configuration = provider.GetRequiredService<IConfiguration>();
+        string? configured = configuration["Storage:Path"];
+
+        if (string.IsNullOrWhiteSpace(configured))
+        {
+            return Path.Combine(AppContext.BaseDirectory, "readings.json");
+        }
+
+        return Path.GetFullPath(configured);
     }
 }
