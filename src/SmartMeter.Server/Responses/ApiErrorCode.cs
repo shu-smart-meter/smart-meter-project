@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SmartMeter.Api.Responses;
+namespace SmartMeter.Server.Responses;
 
 [JsonConverter(typeof(JsonStringEnumConverter<ApiErrorCode>))]
 public enum ApiErrorCode

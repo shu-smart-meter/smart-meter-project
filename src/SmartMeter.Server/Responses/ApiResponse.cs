@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace SmartMeter.Api.Responses;
+namespace SmartMeter.Server.Responses;
 
 public static class ApiResponse
 {

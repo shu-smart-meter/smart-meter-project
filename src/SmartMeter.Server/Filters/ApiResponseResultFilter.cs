@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.WebUtilities;
 
-using SmartMeter.Api.Responses;
+using SmartMeter.Server.Responses;
 
-namespace SmartMeter.Api.Filters;
+namespace SmartMeter.Server.Filters;
 
-// always-run so results from short circuiting filters (auth, 415 etc) get wrapped too
+// always-run so results from filters that stop processing get wrapped too
 // why: https://learn.microsoft.com/aspnet/core/mvc/controllers/filters#ialwaysrunresultfilter-and-iasyncalwaysrunresultfilter
 public sealed class ApiResponseResultFilter : IAlwaysRunResultFilter
 {
@@ -38,7 +38,7 @@ public sealed class ApiResponseResultFilter : IAlwaysRunResultFilter
         return type is { IsGenericType: true } && type.GetGenericTypeDefinition() == typeof(ApiResponse<>);
     }
 
-    // [ApiController] turns errors into problem details before this runs, so pull the message back out of them
+    // [ApiController] creates problem details for invalid requests; extract the message for the envelope
     private static string ErrorMessage(int status, object? value)
     {
         return value switch

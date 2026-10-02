@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 
 using SmartMeter.Model;
+using SmartMeter.Server.Services;
+using SmartMeter.Server.Storage;
 
-namespace SmartMeter.Api.Controllers;
+namespace SmartMeter.Server.Controllers;
 
-// everything a caller can read about one meter, without needing a live connection
-// this is the half of the api that polls: grafana, a status page, a script
+// endpoints for stored meter readings and bills
 [Route("api/v1/meters")]
 public sealed class MetersController : BaseApiController
 {
@@ -18,14 +19,14 @@ public sealed class MetersController : BaseApiController
         _billing = billing;
     }
 
-    // GET /api/v1/meters  ->  every meter the server has a reading from
+    // GET /api/v1/meters returns meters with readings
     [HttpGet]
     public async Task<IReadOnlyList<string>> List(CancellationToken cancellationToken)
     {
         return await _store.GetMeterIdsAsync(cancellationToken);
     }
 
-    // GET /api/v1/meters/meter-01/readings  ->  that meter's full history
+    // GET /api/v1/meters/meter-01/readings lists that meter's readings
     [HttpGet("{meterId}/readings")]
     public async Task<IReadOnlyList<Reading>> Readings(
         string meterId,
@@ -34,7 +35,7 @@ public sealed class MetersController : BaseApiController
         return await _store.GetReadingsAsync(meterId, cancellationToken);
     }
 
-    // GET /api/v1/meters/meter-01/bill  ->  what it owes right now
+    // GET /api/v1/meters/meter-01/bill returns that meter's bill
     [HttpGet("{meterId}/bill")]
     public async Task<Bill> Bill(string meterId, CancellationToken cancellationToken)
     {

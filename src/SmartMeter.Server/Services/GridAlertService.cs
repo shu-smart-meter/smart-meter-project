@@ -1,14 +1,14 @@
 using SmartMeter.Model;
 
-namespace SmartMeter.Implementations;
+namespace SmartMeter.Server.Services;
 
-// raises grid alerts, keeps them, and passes each one on to the meters
+// stores grid alerts and sends them to connected meters
 public sealed class GridAlertService : IGridAlertService
 {
     private readonly IAlertNotifier _notifier;
     private readonly List<GridAlert> _alerts = new();
 
-    // several alerts can be raised at once and they all land on the same list
+    // protect the alert list when requests run at the same time
     private readonly object _gate = new();
 
     public GridAlertService(IAlertNotifier notifier)
@@ -34,7 +34,7 @@ public sealed class GridAlertService : IGridAlertService
     {
         lock (_gate)
         {
-            // hand back a copy so a caller cannot reach into the live list
+            // return a copy so callers cannot change the stored list
             IReadOnlyList<GridAlert> copy = _alerts.ToList();
             return Task.FromResult(copy);
         }

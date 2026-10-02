@@ -1,14 +1,14 @@
 using SmartMeter.Model;
 
-namespace SmartMeter.Implementations;
+namespace SmartMeter.Server.Services;
 
-// the rules a reading has to pass before we store it
+// checks each reading before the server stores it
 public sealed class VerificationService : IVerificationService
 {
-    // a meter sends a reading every 15 to 60 seconds, so anything larger than this is a stuck or broken meter
+    // maximum reading allowed in one 15- to 60-second interval
     private const decimal MaximumReadingKwh = 100m;
 
-    // allow for clocks on the meter being slightly out from the server's clock
+    // allow for small differences between the meter and server clocks
     private static readonly TimeSpan ClockTolerance = TimeSpan.FromMinutes(5);
 
     public VerificationResult Verify(Reading reading)

@@ -1,6 +1,6 @@
 namespace SmartMeter.Model;
 
-// something went wrong on the grid; pushed to every connected meter
+// message about a grid problem
 public sealed record GridAlert
 {
     public required string Message { get; init; }

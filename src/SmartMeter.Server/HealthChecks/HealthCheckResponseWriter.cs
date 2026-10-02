@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-using SmartMeter.Api.Models;
-using SmartMeter.Api.Responses;
+using SmartMeter.Server.Models;
+using SmartMeter.Server.Responses;
 
-namespace SmartMeter.Api.HealthChecks;
+namespace SmartMeter.Server.HealthChecks;
 
 public static class HealthCheckResponseWriter
 {

@@ -1,12 +1,12 @@
-namespace SmartMeter.Model;
+namespace SmartMeter.Server.Services;
 
-// the answer to "is this reading safe to store?"
-// kept as its own type rather than a plain bool so the caller can tell the meter why it was turned down
+// result of checking whether a reading can be stored
+// the reason tells the meter why the server rejected it
 public sealed record VerificationResult
 {
     public required bool IsAccepted { get; init; }
 
-    // empty when the reading was accepted
+    // empty when the reading is accepted
     public required string Reason { get; init; }
 
     public static VerificationResult Accept()

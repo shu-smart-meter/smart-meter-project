@@ -1,15 +1,12 @@
 using Microsoft.AspNetCore.SignalR;
 
-using SmartMeter.Api.Hubs;
 using SmartMeter.Model;
+using SmartMeter.Server.Services;
 
-namespace SmartMeter.Api.Meters;
+namespace SmartMeter.Server.Hubs;
 
-// pushes a grid alert to every meter that is connected right now
-//
-// signalr will only talk to clients from inside a hub, or through this HubContext when
-// the code lives somewhere else. that is the whole reason this class exists.
-// why: https://learn.microsoft.com/aspnet/core/signalr/hubcontext
+// sends grid alerts to connected meters outside a hub method
+// see https://learn.microsoft.com/aspnet/core/signalr/hubcontext
 public sealed class HubAlertNotifier : IAlertNotifier
 {
     private readonly IHubContext<MeterHub> _hub;
@@ -21,7 +18,7 @@ public sealed class HubAlertNotifier : IAlertNotifier
 
     public async Task NotifyAllAsync(GridAlert alert, CancellationToken cancellationToken = default)
     {
-        // Clients.All is every connected meter at once
+        // Clients.All targets every connected meter
         await _hub.Clients.All.SendAsync("GridAlert", alert, cancellationToken);
     }
 }

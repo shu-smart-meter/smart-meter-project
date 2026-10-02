@@ -1,4 +1,4 @@
-namespace SmartMeter.Api.Models;
+namespace SmartMeter.Server.Models;
 
 public sealed record GreetingResponse
 {

@@ -2,19 +2,18 @@ using System.Text.Json;
 
 using SmartMeter.Model;
 
-namespace SmartMeter.Implementations;
+namespace SmartMeter.Server.Storage;
 
-// json file rather than a real database so theres nothing extra to install or run alongside the app
-// and the readings are still there after a restart
+// stores readings in a JSON file so they remain available after a restart
 public sealed class JsonReadingStore : IReadingStore
 {
-    // one json object per meter, eg { "meter-01": [ ...readings ] }
+    // one JSON object per meter, for example { "meter-01": [ ...readings ] }
     private readonly Dictionary<string, List<Reading>> _readings = new();
 
-    // the file path this store reads from and writes to
+    // path of the file used to load and save readings
     private readonly string _path;
 
-    // only one write at a time; several meters send readings at once and they all land in the same file
+    // prevent simultaneous writes to the file
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     public JsonReadingStore(string path)
@@ -57,7 +56,7 @@ public sealed class JsonReadingStore : IReadingStore
                 return Array.Empty<Reading>();
             }
 
-            // ordered so the bill is worked out the same way however the readings arrive
+            // sort readings so billing does not depend on arrival order
             return existing.OrderBy(reading => reading.Timestamp).ToList();
         }
         finally
@@ -80,7 +79,7 @@ public sealed class JsonReadingStore : IReadingStore
         }
     }
 
-    // runs once at start-up so a restart picks the readings back up
+    // load saved readings when the store starts
     private void Load()
     {
         if (!File.Exists(_path))

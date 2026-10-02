@@ -1,8 +1,9 @@
 using SmartMeter.Model;
+using SmartMeter.Server.Storage;
 
-namespace SmartMeter.Implementations;
+namespace SmartMeter.Server.Services;
 
-// turns the readings we have stored into a bill
+// calculates a bill from a meter's stored readings
 public sealed class BillingService : IBillingService
 {
     private readonly IReadingStore _store;
@@ -29,7 +30,7 @@ public sealed class BillingService : IBillingService
         };
     }
 
-    // fixed for now so a bill is reproducible; a real service would take this from a price feed
+    // use a fixed price until the server has a price source
     private static decimal GetCurrentUnitPrice()
     {
         return 0.24m;

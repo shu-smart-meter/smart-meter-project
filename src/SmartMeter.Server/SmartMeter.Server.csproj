@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <ItemGroup>
-        <ProjectReference Include="..\SmartMeter.Api\SmartMeter.Api.csproj" />
-        <ProjectReference Include="..\SmartMeter.Implementations\SmartMeter.Implementations.csproj" />
+        <ProjectReference Include="..\SmartMeter.Model\SmartMeter.Model.csproj" />
     </ItemGroup>
 
 </Project>

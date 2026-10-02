@@ -1,4 +1,6 @@
-namespace SmartMeter.Model;
+using SmartMeter.Model;
+
+namespace SmartMeter.Server.Services;
 
 // works out what a meter owes from the readings we have stored
 public interface IBillingService

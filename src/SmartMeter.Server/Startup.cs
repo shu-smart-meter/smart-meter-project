@@ -1,13 +1,12 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 
-using SmartMeter.Api.Filters;
-using SmartMeter.Api.HealthChecks;
-using SmartMeter.Api.Hubs;
-using SmartMeter.Api.Meters;
-using SmartMeter.Api.Middleware;
-using SmartMeter.Implementations;
-using SmartMeter.Model;
+using SmartMeter.Server.Filters;
+using SmartMeter.Server.HealthChecks;
+using SmartMeter.Server.Hubs;
+using SmartMeter.Server.Middleware;
+using SmartMeter.Server.Services;
+using SmartMeter.Server.Storage;
 
 namespace SmartMeter.Server;
 
@@ -20,21 +19,20 @@ public sealed class Startup
             options.Filters.Add(new ProducesAttribute("application/json"));
             options.Filters.Add<ApiResponseResultFilter>();
         });
-        // nothing writes problem details anymore but UseExceptionHandler() wont start without it
+        // UseExceptionHandler needs problem details services, even with a custom handler
         services.AddProblemDetails();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddHealthChecks();
 
-        // one shared store so every meter reads and writes the same file
-        // the path comes from config; appsettings.json sets a default
+        // share one store across meters; appsettings.json sets the default path
         services.AddSingleton<IReadingStore>(
             provider => new JsonReadingStore(GetStoragePath(provider)));
 
-        // both are stateless, so one instance is enough
+        // these services keep no state between calls
         services.AddSingleton<IVerificationService, VerificationService>();
         services.AddSingleton<IBillingService, BillingService>();
 
-        // alerts are kept for the read endpoints and pushed to the meters as they happen
+        // keep alerts for the read endpoints and send them to connected meters
         services.AddSingleton<IAlertNotifier, HubAlertNotifier>();
         services.AddSingleton<IGridAlertService, GridAlertService>();
 
@@ -44,7 +42,7 @@ public sealed class Startup
     public void Configure(WebApplication app)
     {
         app.UseExceptionHandler();
-        // always json; the default handler sends plain text if the client asks for text
+        // return JSON for errors when the client requests another content type
         app.UseStatusCodePages(StatusCodeResponseWriter.WriteAsync);
 
         app.MapControllers();
@@ -53,11 +51,11 @@ public sealed class Startup
             ResponseWriter = HealthCheckResponseWriter.WriteAsync,
         });
 
-        // each meter gets its own address, and that address is its identity
+        // each meter connects to a route that includes its meter ID
         app.MapHub<MeterHub>("/api/v1/meters/{meterId}");
     }
 
-    // resolves the storage path from config, falling back to a file next to the app
+    // read the storage path from config, or use a file beside the application
     private static string GetStoragePath(IServiceProvider provider)
     {
         IConfiguration configuration = provider.GetRequiredService<IConfiguration>();

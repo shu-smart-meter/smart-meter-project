@@ -1,16 +1,13 @@
 using Microsoft.AspNetCore.SignalR;
 
 using SmartMeter.Model;
+using SmartMeter.Server.Services;
+using SmartMeter.Server.Storage;
 
-namespace SmartMeter.Api.Hubs;
+namespace SmartMeter.Server.Hubs;
 
-// a meter dials its own address on the server, eg /api/v1/meters/meter-01
-// that address is the meter's identity, so the payload does not have to repeat it
-// and a meter cannot write under another meter's name
-//
-// the channel is two way: the meter pushes readings up it, and the server pushes
-// bills and grid alerts back down it. signalr is the plumbing that makes one tcp
-// connection do both: https://learn.microsoft.com/aspnet/core/signalr/hubs
+// meters connect to /api/v1/meters/{meterId}
+// readings go to the server through this hub; bills and alerts return through it
 public sealed class MeterHub : Hub
 {
     private readonly IReadingStore _store;
@@ -27,8 +24,7 @@ public sealed class MeterHub : Hub
         _billing = billing;
     }
 
-    // runs when the meter first connects. it gets back whatever readings the server
-    // already holds, so a meter that restarts picks up where it left off
+    // send stored readings when a meter connects
     public override async Task OnConnectedAsync()
     {
         IReadOnlyList<Reading> readings = await _store.GetReadingsAsync(MeterId);
@@ -38,17 +34,17 @@ public sealed class MeterHub : Hub
         await base.OnConnectedAsync();
     }
 
-    // a meter pushes one reading here every 15 to 60 seconds
+    // receive a reading from the connected meter
     public async Task SubmitReading(Reading reading)
     {
-        // the meter name comes from the address it dialled, never from the payload
+        // use the meter ID from the route, not from the submitted reading
         Reading stamped = reading with { MeterId = MeterId };
 
         VerificationResult result = _verification.Verify(stamped);
 
         if (!result.IsAccepted)
         {
-            // this meter only. broadcasting would tell every meter on the system
+            // send the rejection only to the meter that submitted the reading
             await Clients.Caller.SendAsync("ReadingRejected", result.Reason);
             return;
         }
@@ -60,7 +56,7 @@ public sealed class MeterHub : Hub
         await Clients.Caller.SendAsync("BillUpdated", bill);
     }
 
-    // /api/v1/meters/meter-01  ->  "meter-01"
+    // read the meter ID from the hub route
     private string MeterId
     {
         get

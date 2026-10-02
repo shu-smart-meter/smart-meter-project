@@ -1,4 +1,6 @@
-namespace SmartMeter.Model;
+using SmartMeter.Model;
+
+namespace SmartMeter.Server.Services;
 
 // tells connected meters about something, without knowing how they are connected
 public interface IAlertNotifier

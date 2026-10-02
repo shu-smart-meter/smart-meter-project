@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 
-using SmartMeter.Api.Models;
+using SmartMeter.Server.Models;
 
-namespace SmartMeter.Api.Controllers;
+namespace SmartMeter.Server.Controllers;
 
 [Route("")]
 public sealed class RootController : BaseApiController

@@ -1,4 +1,4 @@
-namespace SmartMeter.Api.Responses;
+namespace SmartMeter.Server.Responses;
 
 public sealed record ApiError
 {

@@ -2,12 +2,12 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
-using SmartMeter.Api.Responses;
+using SmartMeter.Server.Responses;
 
-namespace SmartMeter.Api.Middleware;
+namespace SmartMeter.Server.Middleware;
 
-// catches anything a controller throws and sends it back in the same envelope as everything else
-// writes the json itself instead of going through problem details, so the accept header cant change the format
+// logs unhandled exceptions and returns them in the API response envelope
+// writes JSON directly so the response format does not depend on the Accept header
 // why: https://learn.microsoft.com/aspnet/core/fundamentals/error-handling#iexceptionhandler
 public sealed class GlobalExceptionHandler : IExceptionHandler
 {

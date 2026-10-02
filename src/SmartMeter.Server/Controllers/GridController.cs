@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 
-using SmartMeter.Api.Models;
 using SmartMeter.Model;
+using SmartMeter.Server.Models;
+using SmartMeter.Server.Services;
 
-namespace SmartMeter.Api.Controllers;
+namespace SmartMeter.Server.Controllers;
 
-// the grid side of the api: what has gone wrong, and a way to say something has
+// grid alert endpoints
 [Route("api/v1/grid")]
 public sealed class GridController : BaseApiController
 {
@@ -16,15 +17,14 @@ public sealed class GridController : BaseApiController
         _alerts = alerts;
     }
 
-    // GET /api/v1/grid/alerts  ->  every alert so far
+    // GET /api/v1/grid/alerts lists alerts
     [HttpGet("alerts")]
     public async Task<IReadOnlyList<GridAlert>> List(CancellationToken cancellationToken)
     {
         return await _alerts.GetAlertsAsync(cancellationToken);
     }
 
-    // POST /api/v1/grid/alerts  ->  say the grid has a problem. every meter that is
-    // connected gets pushed the alert straight away, as well as it being stored here
+    // POST /api/v1/grid/alerts raises an alert and sends it to connected meters
     [HttpPost("alerts")]
     public async Task<GridAlert> Raise(
         [FromBody] RaiseAlertRequest request,

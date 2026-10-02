@@ -2,11 +2,11 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 
-using SmartMeter.Api.Responses;
+using SmartMeter.Server.Responses;
 
-namespace SmartMeter.Api.Middleware;
+namespace SmartMeter.Server.Middleware;
 
-// covers error responses that never reach a controller, eg a route that doesnt exist
+// handles error responses that do not reach a controller, eg an unmatched route
 public static class StatusCodeResponseWriter
 {
     public static Task WriteAsync(StatusCodeContext context)

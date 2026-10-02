@@ -1,13 +1,13 @@
 namespace SmartMeter.Model;
 
-// one reading sent by one meter
+// a reading sent by a meter
 public sealed record Reading
 {
-    // which meter sent it, eg "meter-01"
+    // meter that sent the reading
     public required string MeterId { get; init; }
 
     public required DateTimeOffset Timestamp { get; init; }
 
-    // electricity used since the last reading, in kWh
+    // electricity used since the previous reading, in kWh
     public required decimal KilowattHours { get; init; }
 }

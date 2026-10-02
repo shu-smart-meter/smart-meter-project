@@ -1,4 +1,4 @@
-namespace SmartMeter.Api.Models;
+namespace SmartMeter.Server.Models;
 
 // what a caller sends to say the grid has a problem
 public sealed record RaiseAlertRequest
