@@ -48,8 +48,8 @@ public sealed class Startup
             ResponseWriter = HealthCheckResponseWriter.WriteAsync,
         });
 
-        // the one endpoint every meter connects to
-        app.MapHub<MeterHub>("/hubs/meters");
+        // each meter gets its own address, and that address is its identity
+        app.MapHub<MeterHub>("/api/v1/meters/{meterId}");
     }
 
     // resolves the storage path from config, falling back to a file next to the app
