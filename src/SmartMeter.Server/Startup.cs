@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 using SmartMeter.Server.Filters;
 using SmartMeter.Server.HealthChecks;
@@ -36,7 +37,7 @@ public sealed class Startup
         services.AddSingleton<IAlertNotifier, HubAlertNotifier>();
         services.AddSingleton<IGridAlertService, GridAlertService>();
 
-        services.AddSignalR();
+        services.AddSignalR().AddHubOptions<MeterHub>(options => options.AddFilter(typeof(HubErrorLoggingFilter)));
     }
 
     public void Configure(WebApplication app)

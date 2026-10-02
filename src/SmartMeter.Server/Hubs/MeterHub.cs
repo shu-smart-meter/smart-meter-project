@@ -13,15 +13,18 @@ public sealed class MeterHub : Hub
     private readonly IReadingStore _store;
     private readonly IVerificationService _verification;
     private readonly IBillingService _billing;
+    private readonly ILogger<MeterHub> _logger;
 
     public MeterHub(
         IReadingStore store,
         IVerificationService verification,
-        IBillingService billing)
+        IBillingService billing,
+        ILogger<MeterHub> logger)
     {
         _store = store;
         _verification = verification;
         _billing = billing;
+        _logger = logger;
     }
 
     // send stored readings when a meter connects
@@ -32,6 +35,16 @@ public sealed class MeterHub : Hub
         await Clients.Caller.SendAsync("ReadingsLoaded", readings);
 
         await base.OnConnectedAsync();
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        if (exception is not null)
+        {
+            _logger.LogWarning(exception, "Meter {MeterId} disconnected with an error", MeterId);
+        }
+
+        await base.OnDisconnectedAsync(exception);
     }
 
     // receive a reading from the connected meter
