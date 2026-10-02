@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using SmartMeter.Api.Filters;
 using SmartMeter.Api.HealthChecks;
 using SmartMeter.Api.Hubs;
+using SmartMeter.Api.Meters;
 using SmartMeter.Api.Middleware;
 using SmartMeter.Implementations;
 using SmartMeter.Model;
@@ -32,6 +33,10 @@ public sealed class Startup
         // both are stateless, so one instance is enough
         services.AddSingleton<IVerificationService, VerificationService>();
         services.AddSingleton<IBillingService, BillingService>();
+
+        // alerts are kept for the read endpoints and pushed to the meters as they happen
+        services.AddSingleton<IAlertNotifier, HubAlertNotifier>();
+        services.AddSingleton<IGridAlertService, GridAlertService>();
 
         services.AddSignalR();
     }
