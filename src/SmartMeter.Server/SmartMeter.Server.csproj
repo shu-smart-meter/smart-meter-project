@@ -2,6 +2,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\SmartMeter.Api\SmartMeter.Api.csproj" />
+        <ProjectReference Include="..\SmartMeter.Implementations\SmartMeter.Implementations.csproj" />
     </ItemGroup>
 
 </Project>
