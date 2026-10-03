@@ -110,7 +110,7 @@ public sealed class AuthenticationExchange : IAuthenticationExchange
         }
 
         // malformed key material must refuse the proof, never crash the request
-        if (!await VerifyProofAsync(challenge, signature))
+        if (!VerifyProof(challenge, signature))
         {
             return RefuseProof(403, "proof refused");
         }
@@ -131,7 +131,7 @@ public sealed class AuthenticationExchange : IAuthenticationExchange
     }
 
     // the signature covers the exact nonce bytes as returned, nothing else
-    private async Task<bool> VerifyProofAsync(StoredChallenge challenge, byte[] signature)
+    private bool VerifyProof(StoredChallenge challenge, byte[] signature)
     {
         try
         {

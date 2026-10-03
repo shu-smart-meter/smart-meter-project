@@ -64,6 +64,10 @@ public sealed class AuthConfig
         {
             return fallback;
         }
+        catch (OverflowException)
+        {
+            return fallback;
+        }
 
         if (parsed <= 0 || parsed > MaximumLifetimeSeconds)
         {
