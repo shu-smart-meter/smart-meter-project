@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -29,6 +30,10 @@ public sealed class Startup
         services.AddSingleton<IReadingStore>(
             provider => new JsonReadingStore(GetStoragePath(provider)));
 
+        // client keys live in their own file so enrolments survive a restart
+        services.AddSingleton<IEnrolmentStore>(
+            provider => new JsonEnrolmentStore(GetClientPath(provider)));
+
         // these services keep no state between calls
         services.AddSingleton<IVerificationService, VerificationService>();
         services.AddSingleton<IBillingService, BillingService>();
@@ -36,6 +41,25 @@ public sealed class Startup
         // keep alerts for the read endpoints and send them to connected meters
         services.AddSingleton<IAlertNotifier, HubAlertNotifier>();
         services.AddSingleton<IGridAlertService, GridAlertService>();
+
+        // the authentication exchange; secrets come from the environment
+        services.AddSingleton<AuthConfig>(
+            provider => AuthConfig.From(provider.GetRequiredService<IConfiguration>()));
+        services.AddSingleton<ITokenService, TokenService>();
+        services.AddSingleton<IChallengeService, ChallengeService>();
+        services.AddSingleton<IAuthenticationExchange, AuthenticationExchange>();
+
+        // bearer tokens are the one way to authenticate; http and the hub both use it
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = MeterTokenOptions.DefaultScheme;
+            options.DefaultChallengeScheme = MeterTokenOptions.DefaultScheme;
+            options.DefaultForbidScheme = MeterTokenOptions.DefaultScheme;
+        }).AddScheme<MeterTokenOptions, MeterTokenAuthenticationHandler>(
+            MeterTokenOptions.DefaultScheme,
+            options => { });
+
+        services.AddAuthorization();
 
         services.AddSignalR().AddHubOptions<MeterHub>(options => options.AddFilter(typeof(HubErrorLoggingFilter)));
     }
@@ -45,6 +69,9 @@ public sealed class Startup
         app.UseExceptionHandler();
         // return JSON for errors when the client requests another content type
         app.UseStatusCodePages(StatusCodeResponseWriter.WriteAsync);
+        // every authenticated route reads its identity from the bearer token
+        app.UseAuthentication();
+        app.UseAuthorization();
 
         app.MapControllers();
         app.MapHealthChecks("/health", new HealthCheckOptions
@@ -52,8 +79,14 @@ public sealed class Startup
             ResponseWriter = HealthCheckResponseWriter.WriteAsync,
         });
 
-        // each meter connects to a route that includes its meter ID
-        app.MapHub<MeterHub>("/api/v1/meters/{meterId}");
+        // meters connect to the hub with their bearer token; identity comes
+        // from the token claim, never from the url
+        app.MapHub<MeterHub>("/api/v1/live", options =>
+        {
+            // close a connection whose token has expired instead of keeping
+            // it alive on stale credentials
+            options.CloseOnAuthenticationExpiration = true;
+        }).RequireAuthorization();
     }
 
     // read the storage path from config, or use a file beside the application
@@ -65,6 +98,20 @@ public sealed class Startup
         if (string.IsNullOrWhiteSpace(configured))
         {
             return Path.Combine(AppContext.BaseDirectory, "readings.json");
+        }
+
+        return Path.GetFullPath(configured);
+    }
+
+    // same shape for the enrolled clients file
+    private static string GetClientPath(IServiceProvider provider)
+    {
+        IConfiguration configuration = provider.GetRequiredService<IConfiguration>();
+        string? configured = configuration["Storage:ClientPath"];
+
+        if (string.IsNullOrWhiteSpace(configured))
+        {
+            return Path.Combine(AppContext.BaseDirectory, "clients.json");
         }
 
         return Path.GetFullPath(configured);

@@ -37,12 +37,7 @@ public sealed class AuthCodec
     // the meter id is the hash of the public key, so it is stable across restarts
     public static string DeriveMeterId(byte[] publicKey)
     {
-        return EncodeHex(SHA256.HashData(publicKey));
-    }
-
-    public static string EncodeHex(byte[] bytes)
-    {
-        return Convert.ToHexString(bytes).ToLowerInvariant();
+        return Convert.ToHexString(SHA256.HashData(publicKey)).ToLowerInvariant();
     }
 
     // validate a presented public key and return its canonical form:

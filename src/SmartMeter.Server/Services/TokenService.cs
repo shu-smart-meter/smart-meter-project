@@ -96,6 +96,6 @@ public sealed class TokenService : ITokenService
 
     private static string HashToken(string token)
     {
-        return AuthCodec.EncodeHex(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token))).ToLowerInvariant();
     }
 }

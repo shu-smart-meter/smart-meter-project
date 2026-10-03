@@ -28,7 +28,7 @@ public sealed class ChallengeService : IChallengeService
         bool pendingEnrolment,
         CancellationToken cancellationToken = default)
     {
-        string challengeId = AuthCodec.EncodeHex(RandomNumberGenerator.GetBytes(16));
+        string challengeId = Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
         byte[] nonce = RandomNumberGenerator.GetBytes(32);
         DateTimeOffset expiresAt = DateTimeOffset.UtcNow.Add(_config.ChallengeLifetime);
 
