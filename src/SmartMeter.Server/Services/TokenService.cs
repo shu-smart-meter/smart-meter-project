@@ -26,7 +26,12 @@ public sealed class TokenService : ITokenService
     public Task<TokenResponse?> IssueAsync(string meterId, CancellationToken cancellationToken = default)
     {
         string token = AuthCodec.EncodeBase64Url(RandomNumberGenerator.GetBytes(32));
-        DateTimeOffset expiresAt = DateTimeOffset.UtcNow.Add(_config.TokenLifetime);
+
+        // expiry truncated to whole seconds: the auth ticket serializes
+        // ExpiresUtc at second precision, so any stored claims and the
+        // ticket expire at the same instant
+        DateTimeOffset expiresAt = DateTimeOffset.FromUnixTimeSeconds(
+            DateTimeOffset.UtcNow.Add(_config.TokenLifetime).ToUnixTimeSeconds());
         TokenClaims claims = new TokenClaims { MeterId = meterId, ExpiresAt = expiresAt };
 
         lock (_gate)
