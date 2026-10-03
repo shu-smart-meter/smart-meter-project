@@ -109,17 +109,8 @@ public sealed class AuthenticationExchange : IAuthenticationExchange
             return RefuseProof(403, "proof refused");
         }
 
-        using ECDsa verifier = ECDsa.Create();
-        verifier.ImportSubjectPublicKeyInfo(challenge.PublicKey, out int _);
-
-        // the exact nonce bytes as returned, nothing else
-        bool valid = verifier.VerifyData(
-            challenge.Nonce,
-            signature,
-            HashAlgorithmName.SHA256,
-            DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
-
-        if (!valid)
+        // malformed key material must refuse the proof, never crash the request
+        if (!await VerifyProofAsync(challenge, signature))
         {
             return RefuseProof(403, "proof refused");
         }
@@ -137,6 +128,30 @@ public sealed class AuthenticationExchange : IAuthenticationExchange
         }
 
         return new ProofOutcome { Token = token };
+    }
+
+    // the signature covers the exact nonce bytes as returned, nothing else
+    private async Task<bool> VerifyProofAsync(StoredChallenge challenge, byte[] signature)
+    {
+        try
+        {
+            using ECDsa verifier = ECDsa.Create();
+            verifier.ImportSubjectPublicKeyInfo(challenge.PublicKey, out int _);
+
+            return verifier.VerifyData(
+                challenge.Nonce,
+                signature,
+                HashAlgorithmName.SHA256,
+                DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+        }
+        catch (CryptographicException)
+        {
+            return false;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
     }
 
     // persisting the same key twice is harmless; the record is identical

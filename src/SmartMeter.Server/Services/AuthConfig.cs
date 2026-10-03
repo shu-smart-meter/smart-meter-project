@@ -24,6 +24,9 @@ public sealed class AuthConfig
         _challengeLifetime = challengeLifetime;
     }
 
+    // a ttl of zero or a negative value would break token expiry
+    private static readonly long MaximumLifetimeSeconds = 31L * 24 * 60 * 60;
+
     // secrets win from the environment; ttl falls back to appsettings, then defaults
     public static AuthConfig From(IConfiguration configuration)
     {
@@ -51,14 +54,23 @@ public sealed class AuthConfig
             return fallback;
         }
 
+        long parsed;
+
         try
         {
-            return Int64.Parse(value);
+            parsed = Int64.Parse(value);
         }
         catch (FormatException)
         {
             return fallback;
         }
+
+        if (parsed <= 0 || parsed > MaximumLifetimeSeconds)
+        {
+            return fallback;
+        }
+
+        return parsed;
     }
 
     // shared credential a new key must present once; null = enrolment closed
