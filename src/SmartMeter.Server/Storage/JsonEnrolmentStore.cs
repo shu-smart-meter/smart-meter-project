@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 
 using SmartMeter.Model;
@@ -28,8 +29,10 @@ public sealed class JsonEnrolmentStore : IEnrolmentStore
 
         try
         {
+            await WriteToFileAsync(record, cancellationToken);
+
+            // memory changes only once the file is safely in place
             _clients[record.MeterId] = record;
-            await WriteToFileAsync(cancellationToken);
         }
         finally
         {
@@ -82,7 +85,7 @@ public sealed class JsonEnrolmentStore : IEnrolmentStore
         }
     }
 
-    private async Task WriteToFileAsync(CancellationToken cancellationToken)
+    private async Task WriteToFileAsync(EnrolmentRecord record, CancellationToken cancellationToken)
     {
         string? directory = Path.GetDirectoryName(_path);
 
@@ -91,10 +94,26 @@ public sealed class JsonEnrolmentStore : IEnrolmentStore
             Directory.CreateDirectory(directory);
         }
 
+        // stage the new record beside the loaded ones, still in memory
+        Dictionary<string, EnrolmentRecord> next = new(_clients);
+        next[record.MeterId] = record;
+
         string json = JsonSerializer.Serialize(
-            _clients,
+            next,
             new JsonSerializerOptions { WriteIndented = true });
 
-        await File.WriteAllTextAsync(_path, json, cancellationToken);
+        // write beside the target and flush, then move, so a crash mid-write
+        // never leaves a half written file where the store expects one
+        string tempPath = _path + ".tmp";
+
+        {
+            // disposal before the move closes the handle on the temp file
+            await using FileStream writer = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None);
+            await writer.WriteAsync(Encoding.UTF8.GetBytes(json), cancellationToken);
+            await writer.FlushAsync(cancellationToken);
+            writer.Flush(true);
+        }
+
+        File.Move(tempPath, _path, true);
     }
 }
