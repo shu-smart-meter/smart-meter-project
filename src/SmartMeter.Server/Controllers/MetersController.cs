@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 using SmartMeter.Model;
 using SmartMeter.Server.Responses;
@@ -34,14 +34,11 @@ public sealed class MetersController : BaseApiController
     }
 
     // GET /api/v1/meters/meter-01/readings lists that meter's readings;
-    // a meter token can only read its own meter
+    // the route and the token claim must name the same meter
     [HttpGet("{meterId}/readings")]
-    public async Task<ObjectResult> Readings(
-        string meterId,
-        HttpContext context,
-        CancellationToken cancellationToken)
+    public async Task<ObjectResult> Readings(string meterId, CancellationToken cancellationToken)
     {
-        if (RequiresOwnMeter(context, meterId))
+        if (!CanReadMeter(meterId))
         {
             return Forbidden();
         }
@@ -53,12 +50,9 @@ public sealed class MetersController : BaseApiController
 
     // GET /api/v1/meters/meter-01/bill returns that meter's bill
     [HttpGet("{meterId}/bill")]
-    public async Task<ObjectResult> Bill(
-        string meterId,
-        HttpContext context,
-        CancellationToken cancellationToken)
+    public async Task<ObjectResult> Bill(string meterId, CancellationToken cancellationToken)
     {
-        if (RequiresOwnMeter(context, meterId))
+        if (!CanReadMeter(meterId))
         {
             return Forbidden();
         }
@@ -68,10 +62,36 @@ public sealed class MetersController : BaseApiController
         return new ObjectResult(bill);
     }
 
-    // stop one meter reading another's data
-    private static bool RequiresOwnMeter(HttpContext context, string meterId)
+    // admins read anything; a meter token reads the meter it names exactly
+    private bool CanReadMeter(string meterId)
     {
-        return context.User?.Identity?.Name != meterId;
+        ClaimsPrincipal? user = User;
+
+        if (user is null)
+        {
+            return false;
+        }
+
+        string? name = user.Identity?.Name;
+
+        if (name is null)
+        {
+            return false;
+        }
+
+        if (HasRole(user, "admin"))
+        {
+            return true;
+        }
+
+        return HasRole(user, "meter") && name.Equals(meterId);
+    }
+
+    private static bool HasRole(ClaimsPrincipal user, string role)
+    {
+        Claim? claim = user.FindFirst(ClaimTypes.Role);
+
+        return claim is not null && claim.Value.Equals(role);
     }
 
     private static ObjectResult Forbidden()

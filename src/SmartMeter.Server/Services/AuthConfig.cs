@@ -49,27 +49,8 @@ public sealed class AuthConfig
 
     private static long ReadLong(string? value, long fallback)
     {
-        if (value is null)
-        {
-            return fallback;
-        }
-
-        long parsed;
-
-        try
-        {
-            parsed = Int64.Parse(value);
-        }
-        catch (FormatException)
-        {
-            return fallback;
-        }
-        catch (OverflowException)
-        {
-            return fallback;
-        }
-
-        if (parsed <= 0 || parsed > MaximumLifetimeSeconds)
+        if (value is null || !Int64.TryParse(value, out long parsed) ||
+            parsed <= 0 || parsed > MaximumLifetimeSeconds)
         {
             return fallback;
         }

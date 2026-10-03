@@ -59,7 +59,27 @@ public sealed class Startup
             MeterTokenOptions.DefaultScheme,
             options => { });
 
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            // every hub request below this policy needs the meter role, and
+            // the token name must equal the meter the route names
+            options.AddPolicy("MeterOwnResource", policy =>
+            {
+                policy.RequireRole(new string[] { "meter" });
+                policy.RequireAssertion(context =>
+                {
+                    if (context.Resource is not HttpContext http)
+                    {
+                        return Task.FromResult(false);
+                    }
+
+                    string? name = context.User?.Identity?.Name;
+                    string? route = http.Request.RouteValues["meterId"]?.ToString();
+
+                    return Task.FromResult(name is not null && name.Equals(route, StringComparison.Ordinal));
+                });
+            });
+        });
 
         services.AddSignalR().AddHubOptions<MeterHub>(options => options.AddFilter(typeof(HubErrorLoggingFilter)));
     }
@@ -79,14 +99,14 @@ public sealed class Startup
             ResponseWriter = HealthCheckResponseWriter.WriteAsync,
         });
 
-        // meters connect to the hub with their bearer token; identity comes
-        // from the token claim, never from the url
-        app.MapHub<MeterHub>("/api/v1/live", options =>
+        // meters connect to their own resource route; identity comes from
+        // the token claim and must match the route, never the url alone
+        app.MapHub<MeterHub>("/api/v1/meters/{meterId}", options =>
         {
             // close a connection whose token has expired instead of keeping
             // it alive on stale credentials
             options.CloseOnAuthenticationExpiration = true;
-        }).RequireAuthorization();
+        }).RequireAuthorization("MeterOwnResource");
     }
 
     // read the storage path from config, or use a file beside the application

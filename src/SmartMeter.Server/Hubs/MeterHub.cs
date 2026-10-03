@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
 using SmartMeter.Model;
@@ -7,10 +6,9 @@ using SmartMeter.Server.Storage;
 
 namespace SmartMeter.Server.Hubs;
 
-// meters connect to /api/v1/live with their bearer token
+// meters connect to /api/v1/meters/{meterId} with their bearer token
+// the route names the resource; the token claim must match it
 // readings go to the server through this hub; bills and alerts return through it
-// meters only: the admin token must not be able to submit readings
-[Authorize(Roles = "meter")]
 public sealed class MeterHub : Hub
 {
     private readonly IReadingStore _store;
@@ -53,7 +51,7 @@ public sealed class MeterHub : Hub
     // receive a reading from the connected meter
     public async Task SubmitReading(Reading reading)
     {
-        // use the meter ID from the route, not from the submitted reading
+        // identity comes from the token claim, not from the submitted payload
         Reading stamped = reading with { MeterId = MeterId };
 
         VerificationResult result = _verification.Verify(stamped);
@@ -72,8 +70,7 @@ public sealed class MeterHub : Hub
         await Clients.Caller.SendAsync("BillUpdated", bill);
     }
 
-    // the meter that owns this connection, from the bearer token claim,
-    // never from the url
+    // the meter the token claim names; the connection can act as that meter only
     private string MeterId
     {
         get

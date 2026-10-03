@@ -17,6 +17,11 @@ COPY --from=build /app .
 
 ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
+
+# the compose file mounts the storage volume here; it needs to be writable
+# by the app user, which owns no part of the root-owned volume root
+RUN mkdir -p /data && chown app:app /data
+
 USER app
 
 ENTRYPOINT ["dotnet", "SmartMeter.Server.dll"]

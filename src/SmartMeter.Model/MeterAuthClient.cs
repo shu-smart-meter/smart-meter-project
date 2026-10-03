@@ -116,13 +116,9 @@ public sealed record AuthEnvelope<T>
 
     public T? Response { get; init; }
 
-    public AuthEnvelopeError? Error { get; init; }
-}
+    // machine-readable error name, for example "forbidden"
+    public string? Error { get; init; }
 
-// the error half of the server envelope
-public sealed record AuthEnvelopeError
-{
-    public required string Error { get; init; }
-
-    public required string Message { get; init; }
+    // human-readable detail; never contains secrets
+    public string? Message { get; init; }
 }
