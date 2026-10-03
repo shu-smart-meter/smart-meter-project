@@ -8,6 +8,9 @@ public sealed record StoredChallenge
     // meter the challenge is bound to
     public required string MeterId { get; init; }
 
+    // canonical public key bytes the proof must match
+    public required byte[] PublicKey { get; init; }
+
     // raw nonce bytes the proof signature must cover
     public required byte[] Nonce { get; init; }
 

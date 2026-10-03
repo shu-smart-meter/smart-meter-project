@@ -24,6 +24,43 @@ public sealed class AuthConfig
         _challengeLifetime = challengeLifetime;
     }
 
+    // secrets win from the environment; ttl falls back to appsettings, then defaults
+    public static AuthConfig From(IConfiguration configuration)
+    {
+        string? enrolmentSecret = Environment.GetEnvironmentVariable("SMART_METER_ENROLMENT_SECRET");
+        string? adminToken = Environment.GetEnvironmentVariable("SMART_METER_ADMIN_TOKEN");
+
+        long tokenSeconds = ReadLong(
+            Environment.GetEnvironmentVariable("SMART_METER_TOKEN_SECONDS"),
+            ReadLong(configuration["Auth:TokenLifetimeSeconds"], 3600));
+        long challengeSeconds = ReadLong(
+            Environment.GetEnvironmentVariable("SMART_METER_CHALLENGE_SECONDS"),
+            ReadLong(configuration["Auth:ChallengeLifetimeSeconds"], 120));
+
+        return new AuthConfig(
+            enrolmentSecret,
+            HashToken(adminToken),
+            TimeSpan.FromSeconds(tokenSeconds),
+            TimeSpan.FromSeconds(challengeSeconds));
+    }
+
+    private static long ReadLong(string? value, long fallback)
+    {
+        if (value is null)
+        {
+            return fallback;
+        }
+
+        try
+        {
+            return Int64.Parse(value);
+        }
+        catch (FormatException)
+        {
+            return fallback;
+        }
+    }
+
     // shared credential a new key must present once; null = enrolment closed
     public string? EnrolmentSecret
     {

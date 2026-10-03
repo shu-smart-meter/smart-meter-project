@@ -8,6 +8,9 @@ namespace SmartMeter.Server.Services;
 // issues random expiring tokens and validates them by hash lookup
 public sealed class TokenService : ITokenService
 {
+    // hard bound on live tokens; pruned first, then new issues are refused
+    private static readonly int MaximumTokens = 10000;
+
     // hash of the token -> claims; the token value itself is never stored
     private readonly Dictionary<string, TokenClaims> _tokens = new();
     private readonly AuthConfig _config;
@@ -20,7 +23,7 @@ public sealed class TokenService : ITokenService
         _config = config;
     }
 
-    public Task<TokenResponse> IssueAsync(string meterId, CancellationToken cancellationToken = default)
+    public Task<TokenResponse?> IssueAsync(string meterId, CancellationToken cancellationToken = default)
     {
         string token = AuthCodec.EncodeBase64Url(RandomNumberGenerator.GetBytes(32));
         DateTimeOffset expiresAt = DateTimeOffset.UtcNow.Add(_config.TokenLifetime);
@@ -29,11 +32,21 @@ public sealed class TokenService : ITokenService
         lock (_gate)
         {
             PruneExpired();
+
+            if (_tokens.Count >= MaximumTokens)
+            {
+                return Task.FromResult<TokenResponse?>(null);
+            }
+
             _tokens[HashToken(token)] = claims;
         }
 
-        return Task.FromResult(
-            new TokenResponse { AccessToken = token, ExpiresAt = expiresAt, MeterId = meterId });
+        return Task.FromResult<TokenResponse?>(new TokenResponse
+        {
+            AccessToken = token,
+            ExpiresAt = expiresAt,
+            MeterId = meterId,
+        });
     }
 
     public Task<TokenClaims?> ValidateAsync(

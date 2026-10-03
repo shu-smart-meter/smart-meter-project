@@ -10,14 +10,16 @@ namespace SmartMeter.Server.Services;
 // request returns a challenge; proof returns an access token
 public sealed class AuthenticationExchange : IAuthenticationExchange
 {
+    // base64 of a P-256 spki fits in 124 chars; anything bigger is not a key
+    private static readonly int MaximumPublicKeyLength = 1024;
+    private static readonly int MaximumEnrolmentSecretLength = 512;
+    private static readonly int MaximumChallengeIdLength = 128;
+    private static readonly int MaximumSignatureLength = 256;
+
     private readonly IEnrolmentStore _enrolments;
     private readonly IChallengeService _challenges;
     private readonly ITokenService _tokens;
     private readonly AuthConfig _config;
-
-    // meter id -> canonical public key while enrolment is still in progress
-    private readonly Dictionary<string, byte[]> _pending = new();
-    private readonly object _pendingGate = new();
 
     public AuthenticationExchange(
         IEnrolmentStore enrolments,
@@ -35,6 +37,19 @@ public sealed class AuthenticationExchange : IAuthenticationExchange
         ChallengeRequest request,
         CancellationToken cancellationToken = default)
     {
+        // reject oversized or malformed input before any decode work
+        if (request.PublicKey.Length > MaximumPublicKeyLength)
+        {
+            return RefuseChallenge(400, "request not accepted");
+        }
+
+        string? enrolmentSecret = request.EnrolmentSecret;
+
+        if (enrolmentSecret is not null && enrolmentSecret.Length > MaximumEnrolmentSecretLength)
+        {
+            return RefuseChallenge(400, "request not accepted");
+        }
+
         byte[]? publicKey = AuthCodec.DecodeBase64(request.PublicKey);
 
         if (publicKey is null)
@@ -54,28 +69,31 @@ public sealed class AuthenticationExchange : IAuthenticationExchange
         EnrolmentRecord? existing = await _enrolments.FindAsync(meterId, cancellationToken);
         bool pending = existing is null;
 
-        if (pending)
+        if (pending && !AcceptsEnrolmentSecret(enrolmentSecret))
         {
-            if (!AcceptsEnrolmentSecret(request.EnrolmentSecret))
-            {
-                // unknown key without the shared secret; same answer either way
-                return RefuseChallenge(403, "enrolment refused");
-            }
-
-            lock (_pendingGate)
-            {
-                _pending[meterId] = publicKey;
-            }
+            // unknown key without the shared secret; same answer either way
+            return RefuseChallenge(403, "enrolment refused");
         }
 
-        ChallengeResponse challenge =
-            await _challenges.CreateAsync(meterId, pending, cancellationToken);
+        ChallengeResponse? challenge =
+            await _challenges.CreateAsync(meterId, publicKey, pending, cancellationToken);
+
+        if (challenge is null)
+        {
+            return RefuseChallenge(503, "try again later");
+        }
 
         return new ChallengeOutcome { Challenge = challenge };
     }
 
     public async Task<ProofOutcome> ProveAsync(ProofRequest request, CancellationToken cancellationToken = default)
     {
+        if (request.ChallengeId.Length > MaximumChallengeIdLength ||
+            request.Signature.Length > MaximumSignatureLength)
+        {
+            return RefuseProof(403, "proof refused");
+        }
+
         StoredChallenge? challenge = await _challenges.ConsumeAsync(request.ChallengeId, cancellationToken);
 
         if (challenge is null)
@@ -91,15 +109,8 @@ public sealed class AuthenticationExchange : IAuthenticationExchange
             return RefuseProof(403, "proof refused");
         }
 
-        byte[]? publicKey = await RegisteredKeyAsync(challenge, cancellationToken);
-
-        if (publicKey is null)
-        {
-            return RefuseProof(403, "proof refused");
-        }
-
         using ECDsa verifier = ECDsa.Create();
-        verifier.ImportSubjectPublicKeyInfo(publicKey, out int _);
+        verifier.ImportSubjectPublicKeyInfo(challenge.PublicKey, out int _);
 
         // the exact nonce bytes as returned, nothing else
         bool valid = verifier.VerifyData(
@@ -115,52 +126,25 @@ public sealed class AuthenticationExchange : IAuthenticationExchange
 
         if (challenge.PendingEnrolment)
         {
-            await CompleteEnrolmentAsync(challenge.MeterId, publicKey, cancellationToken);
+            await CompleteEnrolmentAsync(challenge.MeterId, challenge.PublicKey, cancellationToken);
         }
 
-        TokenResponse token = await _tokens.IssueAsync(challenge.MeterId, cancellationToken);
+        TokenResponse? token = await _tokens.IssueAsync(challenge.MeterId, cancellationToken);
+
+        if (token is null)
+        {
+            return RefuseProof(503, "try again later");
+        }
 
         return new ProofOutcome { Token = token };
     }
 
-    // the key a challenge was issued for: pending enrolment or a stored record
-    private async Task<byte[]?> RegisteredKeyAsync(
-        StoredChallenge challenge,
-        CancellationToken cancellationToken)
-    {
-        if (challenge.PendingEnrolment)
-        {
-            lock (_pendingGate)
-            {
-                if (!_pending.TryGetValue(challenge.MeterId, out byte[]? publicKey))
-                {
-                    return null;
-                }
-
-                return publicKey;
-            }
-        }
-
-        EnrolmentRecord? record = await _enrolments.FindAsync(challenge.MeterId, cancellationToken);
-
-        if (record is null)
-        {
-            return null;
-        }
-
-        return AuthCodec.DecodeBase64(record.PublicKey);
-    }
-
+    // persisting the same key twice is harmless; the record is identical
     private async Task CompleteEnrolmentAsync(
         string meterId,
         byte[] publicKey,
         CancellationToken cancellationToken)
     {
-        lock (_pendingGate)
-        {
-            _pending.Remove(meterId);
-        }
-
         EnrolmentRecord record = new EnrolmentRecord
         {
             MeterId = meterId,

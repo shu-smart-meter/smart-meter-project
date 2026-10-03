@@ -7,6 +7,9 @@ namespace SmartMeter.Server.Services;
 // one-use signing challenges: random nonce, server-side expiry, bound to a key
 public sealed class ChallengeService : IChallengeService
 {
+    // hard bound on outstanding challenges; pruned first, then refused
+    private static readonly int MaximumChallenges = 1000;
+
     // challenge id -> the challenge and when it stops being acceptable
     private readonly Dictionary<string, ChallengeEntry> _challenges = new();
     private readonly AuthConfig _config;
@@ -19,8 +22,9 @@ public sealed class ChallengeService : IChallengeService
         _config = config;
     }
 
-    public Task<ChallengeResponse> CreateAsync(
+    public Task<ChallengeResponse?> CreateAsync(
         string meterId,
+        byte[] publicKey,
         bool pendingEnrolment,
         CancellationToken cancellationToken = default)
     {
@@ -32,11 +36,17 @@ public sealed class ChallengeService : IChallengeService
         {
             PruneExpired();
 
+            if (_challenges.Count >= MaximumChallenges)
+            {
+                return Task.FromResult<ChallengeResponse?>(null);
+            }
+
             _challenges[challengeId] = new ChallengeEntry
             {
                 Challenge = new StoredChallenge
                 {
                     MeterId = meterId,
+                    PublicKey = publicKey,
                     Nonce = nonce,
                     PendingEnrolment = pendingEnrolment,
                 },
@@ -44,7 +54,7 @@ public sealed class ChallengeService : IChallengeService
             };
         }
 
-        return Task.FromResult(new ChallengeResponse
+        return Task.FromResult<ChallengeResponse?>(new ChallengeResponse
         {
             ChallengeId = challengeId,
             Nonce = AuthCodec.EncodeBase64(nonce),
