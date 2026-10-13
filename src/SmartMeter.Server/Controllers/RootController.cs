@@ -12,4 +12,10 @@ public sealed class RootController : BaseApiController
     {
         return new GreetingResponse { Message = "Hello World!" };
     }
+
+    [HttpHead]
+    public IActionResult Head()
+    {
+        return Ok();
+    }
 }
