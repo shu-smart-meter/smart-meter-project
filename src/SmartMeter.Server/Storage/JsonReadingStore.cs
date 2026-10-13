@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 
 using SmartMeter.Model;
@@ -8,7 +9,7 @@ namespace SmartMeter.Server.Storage;
 public sealed class JsonReadingStore : IReadingStore
 {
     // one JSON object per meter, for example { "meter-01": [ ...readings ] }
-    private readonly Dictionary<string, List<Reading>> _readings = new();
+    private Dictionary<string, List<Reading>> _readings = new();
 
     // path of the file used to load and save readings
     private readonly string _path;
@@ -28,14 +29,9 @@ public sealed class JsonReadingStore : IReadingStore
 
         try
         {
-            if (!_readings.TryGetValue(reading.MeterId, out List<Reading>? existing))
-            {
-                existing = new List<Reading>();
-                _readings[reading.MeterId] = existing;
-            }
-
-            existing.Add(reading);
-            await WriteToFileAsync(cancellationToken);
+            Dictionary<string, List<Reading>> next = CreateNextReadings(reading);
+            await WriteToFileAsync(next, cancellationToken);
+            _readings = next;
         }
         finally
         {
@@ -103,7 +99,24 @@ public sealed class JsonReadingStore : IReadingStore
         }
     }
 
-    private async Task WriteToFileAsync(CancellationToken cancellationToken)
+    private Dictionary<string, List<Reading>> CreateNextReadings(Reading reading)
+    {
+        Dictionary<string, List<Reading>> next = new(_readings);
+
+        if (!next.TryGetValue(reading.MeterId, out List<Reading>? existing))
+        {
+            existing = new List<Reading>();
+        }
+
+        List<Reading> meterReadings = new List<Reading>(existing);
+        meterReadings.Add(reading);
+        next[reading.MeterId] = meterReadings;
+        return next;
+    }
+
+    private async Task WriteToFileAsync(
+        Dictionary<string, List<Reading>> next,
+        CancellationToken cancellationToken)
     {
         string? directory = Path.GetDirectoryName(_path);
 
@@ -113,9 +126,43 @@ public sealed class JsonReadingStore : IReadingStore
         }
 
         string json = JsonSerializer.Serialize(
-            _readings,
+            next,
             new JsonSerializerOptions { WriteIndented = true });
 
-        await File.WriteAllTextAsync(_path, json, cancellationToken);
+        string tempPath = _path + ".tmp";
+
+        try
+        {
+            await using (FileStream writer = new FileStream(
+                tempPath,
+                FileMode.Create,
+                FileAccess.Write,
+                FileShare.None))
+            {
+                byte[] contents = Encoding.UTF8.GetBytes(json);
+                await writer.WriteAsync(contents, cancellationToken);
+                await writer.FlushAsync(cancellationToken);
+                writer.Flush(true);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            File.Move(tempPath, _path, true);
+        }
+        catch
+        {
+            // cleanup must not replace the write error
+            try
+            {
+                File.Delete(tempPath);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+
+            throw;
+        }
     }
 }
