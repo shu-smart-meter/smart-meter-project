@@ -36,6 +36,7 @@ public sealed class Startup
 
         // these services keep no state between calls
         services.AddSingleton<IVerificationService, VerificationService>();
+        services.AddSingleton<IBillCalculationStrategy, FlatRateBillCalculationStrategy>();
         services.AddSingleton<IBillingService, BillingService>();
 
         // keep alerts for the read endpoints and send them to connected meters

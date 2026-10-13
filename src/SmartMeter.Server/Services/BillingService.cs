@@ -12,28 +12,25 @@ public sealed class BillingService : IBillingService
 {
     private readonly IReadingStore _store;
     private readonly IConfiguration _configuration;
+    private readonly IBillCalculationStrategy _calculationStrategy;
 
-    public BillingService(IReadingStore store, IConfiguration configuration)
+    public BillingService(
+        IReadingStore store,
+        IConfiguration configuration,
+        IBillCalculationStrategy calculationStrategy)
     {
         _store = store;
         _configuration = configuration;
+        _calculationStrategy = calculationStrategy;
     }
 
     public async Task<Bill> CalculateAsync(string meterId, CancellationToken cancellationToken = default)
     {
         IReadOnlyList<Reading> readings = await _store.GetReadingsAsync(meterId, cancellationToken);
 
-        decimal totalUnits = readings.Sum(reading => reading.KilowattHours);
         decimal unitPrice = GetCurrentUnitPrice();
 
-        return new Bill
-        {
-            MeterId = meterId,
-            Units = totalUnits,
-            UnitPrice = unitPrice,
-            Total = Math.Round(totalUnits * unitPrice, 2),
-            CalculatedAt = DateTimeOffset.UtcNow,
-        };
+        return _calculationStrategy.Calculate(meterId, readings, unitPrice);
     }
 
     private decimal GetCurrentUnitPrice()
