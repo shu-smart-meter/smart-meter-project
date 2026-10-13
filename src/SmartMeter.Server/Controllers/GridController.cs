@@ -19,7 +19,7 @@ public sealed class GridController : BaseApiController
         _alerts = alerts;
     }
 
-    // GET /api/v1/grid/alerts lists alerts; any authenticated principal
+    // get /api/v1/grid/alerts lists alerts; any authenticated principal
     [HttpGet("alerts")]
     public async Task<ObjectResult> List(CancellationToken cancellationToken)
     {
@@ -28,7 +28,7 @@ public sealed class GridController : BaseApiController
         return new ObjectResult(alerts);
     }
 
-    // POST /api/v1/grid/alerts raises an alert and pushes it to meters; admins only
+    // post /api/v1/grid/alerts raises an alert and pushes it to meters; admins only
     [Authorize(Roles = "admin")]
     [HttpPost("alerts")]
     public async Task<ObjectResult> Raise(

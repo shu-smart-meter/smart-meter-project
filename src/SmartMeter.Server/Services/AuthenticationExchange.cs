@@ -101,7 +101,7 @@ public sealed class AuthenticationExchange : IAuthenticationExchange
             return RefuseProof(403, "proof refused");
         }
 
-        // P-1363 signatures are fixed at 64 bytes for P-256; reject anything else
+        // p-1363 signatures are fixed at 64 bytes for p-256; reject anything else
         byte[]? signature = AuthCodec.DecodeBase64(request.Signature);
 
         if (signature is null || signature.Length != 64)

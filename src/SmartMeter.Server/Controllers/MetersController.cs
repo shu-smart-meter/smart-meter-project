@@ -23,7 +23,7 @@ public sealed class MetersController : BaseApiController
         _billing = billing;
     }
 
-    // GET /api/v1/meters is the global inventory; admins only
+    // get /api/v1/meters is the global inventory; admins only
     [Authorize(Roles = "admin")]
     [HttpGet]
     public async Task<ObjectResult> List(CancellationToken cancellationToken)
@@ -33,7 +33,7 @@ public sealed class MetersController : BaseApiController
         return new ObjectResult(meterIds);
     }
 
-    // GET /api/v1/meters/meter-01/readings lists that meter's readings;
+    // get /api/v1/meters/meter-01/readings lists that meter's readings;
     // the route and the token claim must name the same meter
     [HttpGet("{meterId}/readings")]
     public async Task<ObjectResult> Readings(string meterId, CancellationToken cancellationToken)
@@ -48,7 +48,7 @@ public sealed class MetersController : BaseApiController
         return new ObjectResult(readings);
     }
 
-    // GET /api/v1/meters/meter-01/bill returns that meter's bill
+    // get /api/v1/meters/meter-01/bill returns that meter's bill
     [HttpGet("{meterId}/bill")]
     public async Task<ObjectResult> Bill(string meterId, CancellationToken cancellationToken)
     {

@@ -18,7 +18,7 @@ public sealed class HubAlertNotifier : IAlertNotifier
 
     public async Task NotifyAllAsync(GridAlert alert, CancellationToken cancellationToken = default)
     {
-        // Clients.All targets every connected meter
+        // clients.all targets every connected meter
         await _hub.Clients.All.SendAsync("GridAlert", alert, cancellationToken);
     }
 }

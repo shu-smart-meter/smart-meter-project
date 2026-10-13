@@ -28,7 +28,7 @@ public sealed class TokenService : ITokenService
         string token = AuthCodec.EncodeBase64Url(RandomNumberGenerator.GetBytes(32));
 
         // expiry truncated to whole seconds: the auth ticket serializes
-        // ExpiresUtc at second precision, so any stored claims and the
+        // expiresutc at second precision, so any stored claims and the
         // ticket expire at the same instant
         DateTimeOffset expiresAt = DateTimeOffset.FromUnixTimeSeconds(
             DateTimeOffset.UtcNow.Add(_config.TokenLifetime).ToUnixTimeSeconds());

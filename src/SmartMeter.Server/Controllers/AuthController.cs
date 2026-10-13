@@ -17,7 +17,7 @@ public sealed class AuthController : BaseApiController
         _exchange = exchange;
     }
 
-    // POST /api/v1/auth/request asks for a challenge;
+    // post /api/v1/auth/request asks for a challenge;
     // the failure branch is already an envelope, so the filter leaves it alone
     [HttpPost("request")]
     public async Task<ObjectResult> RequestChallenge(
@@ -38,7 +38,7 @@ public sealed class AuthController : BaseApiController
         return new ObjectResult(outcome.Challenge ?? throw new IOException("challenge missing"));
     }
 
-    // POST /api/v1/auth/prove signs the challenge and receives an access token
+    // post /api/v1/auth/prove signs the challenge and receives an access token
     [HttpPost("prove")]
     public async Task<ObjectResult> Prove(
         [FromBody] ProofRequest request,

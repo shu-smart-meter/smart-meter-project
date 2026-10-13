@@ -21,7 +21,7 @@ public sealed class Startup
             options.Filters.Add(new ProducesAttribute("application/json"));
             options.Filters.Add<ApiResponseResultFilter>();
         });
-        // UseExceptionHandler needs problem details services, even with a custom handler
+        // useexceptionhandler needs problem details services, even with a custom handler
         services.AddProblemDetails();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddHealthChecks();
