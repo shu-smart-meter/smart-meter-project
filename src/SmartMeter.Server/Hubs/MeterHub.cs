@@ -42,7 +42,18 @@ public sealed class MeterHub : Hub
     {
         if (exception is not null)
         {
-            _logger.LogWarning(exception, "Meter {MeterId} disconnected with an error", MeterId);
+            _logger.LogWarning(
+                exception,
+                "Meter {MeterId} connection {ConnectionId} disconnected with an error",
+                MeterId,
+                Context.ConnectionId);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Meter {MeterId} connection {ConnectionId} disconnected",
+                MeterId,
+                Context.ConnectionId);
         }
 
         await base.OnDisconnectedAsync(exception);
