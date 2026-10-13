@@ -2,6 +2,7 @@ services:
     server:
         ports: !override
             - "5443:8443"
+        # the app runs as uid 1654; make the pfx readable by that user
         volumes:
             - ${SMART_METER_TLS_CERTIFICATE:?Set SMART_METER_TLS_CERTIFICATE to the host PFX path}:/https/tls.pfx:ro
         environment:
