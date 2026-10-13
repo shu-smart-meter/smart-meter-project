@@ -14,23 +14,29 @@ public sealed class MeterHub : Hub
     private readonly IReadingStore _store;
     private readonly IVerificationService _verification;
     private readonly IBillingService _billing;
+    private readonly IBillNotifier _billNotifier;
     private readonly ILogger<MeterHub> _logger;
 
     public MeterHub(
         IReadingStore store,
         IVerificationService verification,
         IBillingService billing,
+        IBillNotifier billNotifier,
         ILogger<MeterHub> logger)
     {
         _store = store;
         _verification = verification;
         _billing = billing;
+        _billNotifier = billNotifier;
         _logger = logger;
     }
 
     // send stored readings when a meter connects
     public override async Task OnConnectedAsync()
     {
+        // same-meter sessions receive bill updates from the group publisher
+        await Groups.AddToGroupAsync(Context.ConnectionId, MeterId);
+
         IReadOnlyList<Reading> readings = await _store.GetReadingsAsync(MeterId);
 
         await Clients.Caller.SendAsync("ReadingsLoaded", readings);
@@ -78,7 +84,7 @@ public sealed class MeterHub : Hub
 
         Bill bill = await _billing.CalculateAsync(MeterId);
 
-        await Clients.Caller.SendAsync("BillUpdated", bill);
+        await _billNotifier.NotifyMeterAsync(MeterId, bill);
     }
 
     // the meter the token claim names; the connection can act as that meter only

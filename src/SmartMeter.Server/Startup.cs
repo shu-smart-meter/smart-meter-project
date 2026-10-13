@@ -41,6 +41,7 @@ public sealed class Startup
 
         // keep alerts for the read endpoints and send them to connected meters
         services.AddSingleton<IAlertNotifier, HubAlertNotifier>();
+        services.AddSingleton<IBillNotifier, HubBillNotifier>();
         services.AddSingleton<IGridAlertService, GridAlertService>();
 
         // the authentication exchange; secrets come from the environment
