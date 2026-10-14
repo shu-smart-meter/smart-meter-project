@@ -14,11 +14,10 @@ services:
         environment:
             # storage lives on the named volume, outside the image
             Storage__Path: /data/readings.json
-            Storage__ClientPath: /data/clients.json
             Billing__UnitPricePerKwh: ${Billing__UnitPricePerKwh:-0.24}
             # secrets come from the shell environment, never from files
-            # left empty, enrolment and the admin endpoints fail closed
-            SMART_METER_ENROLMENT_SECRET: ${SMART_METER_ENROLMENT_SECRET:-}
+            # empty values disable meter and admin authentication
+            SMART_METER_CLIENT_SECRET: ${SMART_METER_CLIENT_SECRET:-}
             SMART_METER_ADMIN_TOKEN: ${SMART_METER_ADMIN_TOKEN:-}
 
 volumes:

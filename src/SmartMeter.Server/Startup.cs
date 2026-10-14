@@ -30,10 +30,6 @@ public sealed class Startup
         services.AddSingleton<IReadingStore>(
             provider => new JsonReadingStore(GetStoragePath(provider)));
 
-        // client keys live in their own file so enrolments survive a restart
-        services.AddSingleton<IEnrolmentStore>(
-            provider => new JsonEnrolmentStore(GetClientPath(provider)));
-
         // these services keep no state between calls
         services.AddSingleton<IVerificationService, VerificationService>();
         services.AddSingleton<IBillCalculationStrategy, FlatRateBillCalculationStrategy>();
@@ -44,11 +40,10 @@ public sealed class Startup
         services.AddSingleton<IBillNotifier, HubBillNotifier>();
         services.AddSingleton<IGridAlertService, GridAlertService>();
 
-        // the authentication exchange; secrets come from the environment
+        // credentials come from environment variables
         services.AddSingleton<AuthConfig>(
             provider => AuthConfig.From(provider.GetRequiredService<IConfiguration>()));
         services.AddSingleton<ITokenService, TokenService>();
-        services.AddSingleton<IChallengeService, ChallengeService>();
         services.AddSingleton<IAuthenticationExchange, AuthenticationExchange>();
 
         // bearer tokens are the one way to authenticate; http and the hub both use it
@@ -125,17 +120,4 @@ public sealed class Startup
         return Path.GetFullPath(configured);
     }
 
-    // same shape for the enrolled clients file
-    private static string GetClientPath(IServiceProvider provider)
-    {
-        IConfiguration configuration = provider.GetRequiredService<IConfiguration>();
-        string? configured = configuration["Storage:ClientPath"];
-
-        if (string.IsNullOrWhiteSpace(configured))
-        {
-            return Path.Combine(AppContext.BaseDirectory, "clients.json");
-        }
-
-        return Path.GetFullPath(configured);
-    }
 }

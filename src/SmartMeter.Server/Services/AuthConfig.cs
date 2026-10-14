@@ -3,71 +3,40 @@ using System.Text;
 
 namespace SmartMeter.Server.Services;
 
-// settings for the authentication exchange
-// secrets come from environment variables, never from tracked config
 public sealed class AuthConfig
 {
-    private readonly string? _enrolmentSecret;
+    private readonly byte[]? _clientSecretHash;
     private readonly byte[]? _adminTokenHash;
     private readonly TimeSpan _tokenLifetime;
-    private readonly TimeSpan _challengeLifetime;
 
-    public AuthConfig(
-        string? enrolmentSecret,
-        byte[]? adminTokenHash,
-        TimeSpan tokenLifetime,
-        TimeSpan challengeLifetime)
+    public AuthConfig(byte[]? clientSecretHash, byte[]? adminTokenHash, TimeSpan tokenLifetime)
     {
-        _enrolmentSecret = enrolmentSecret;
+        _clientSecretHash = clientSecretHash;
         _adminTokenHash = adminTokenHash;
         _tokenLifetime = tokenLifetime;
-        _challengeLifetime = challengeLifetime;
     }
 
-    // a ttl of zero or a negative value would break token expiry
     private static readonly long MaximumLifetimeSeconds = 31L * 24 * 60 * 60;
 
-    // secrets win from the environment; ttl falls back to appsettings, then defaults
     public static AuthConfig From(IConfiguration configuration)
     {
-        string? enrolmentSecret = Environment.GetEnvironmentVariable("SMART_METER_ENROLMENT_SECRET");
+        string? clientSecret = Environment.GetEnvironmentVariable("SMART_METER_CLIENT_SECRET");
         string? adminToken = Environment.GetEnvironmentVariable("SMART_METER_ADMIN_TOKEN");
-
         long tokenSeconds = ReadLong(
             Environment.GetEnvironmentVariable("SMART_METER_TOKEN_SECONDS"),
             ReadLong(configuration["Auth:TokenLifetimeSeconds"], 3600));
-        long challengeSeconds = ReadLong(
-            Environment.GetEnvironmentVariable("SMART_METER_CHALLENGE_SECONDS"),
-            ReadLong(configuration["Auth:ChallengeLifetimeSeconds"], 120));
 
         return new AuthConfig(
-            enrolmentSecret,
-            HashToken(adminToken),
-            TimeSpan.FromSeconds(tokenSeconds),
-            TimeSpan.FromSeconds(challengeSeconds));
+            HashSecret(clientSecret),
+            HashSecret(adminToken),
+            TimeSpan.FromSeconds(tokenSeconds));
     }
 
-    private static long ReadLong(string? value, long fallback)
+    public bool AcceptsClientSecret(string? presented)
     {
-        if (value is null || !Int64.TryParse(value, out long parsed) ||
-            parsed <= 0 || parsed > MaximumLifetimeSeconds)
-        {
-            return fallback;
-        }
-
-        return parsed;
+        return MatchesSecret(_clientSecretHash, presented);
     }
 
-    // shared credential a new key must present once; null = enrolment closed
-    public string? EnrolmentSecret
-    {
-        get
-        {
-            return _enrolmentSecret;
-        }
-    }
-
-    // hash of the admin token, so the raw value is not kept around
     public byte[]? AdminTokenHash
     {
         get
@@ -84,21 +53,35 @@ public sealed class AuthConfig
         }
     }
 
-    public TimeSpan ChallengeLifetime
+    public static bool MatchesSecret(byte[]? expected, string? presented)
     {
-        get
+        if (expected is null || string.IsNullOrEmpty(presented))
         {
-            return _challengeLifetime;
+            return false;
         }
+
+        byte[] actual = HashSecret(presented)!;
+        return CryptographicOperations.FixedTimeEquals(expected, actual);
     }
 
-    public static byte[]? HashToken(string? token)
+    private static byte[]? HashSecret(string? secret)
     {
-        if (token is null || token.Length == 0)
+        if (secret is null || secret.Length == 0)
         {
             return null;
         }
 
-        return SHA256.HashData(Encoding.UTF8.GetBytes(token));
+        return SHA256.HashData(Encoding.UTF8.GetBytes(secret));
+    }
+
+    private static long ReadLong(string? value, long fallback)
+    {
+        if (value is null || !Int64.TryParse(value, out long parsed) ||
+            parsed <= 0 || parsed > MaximumLifetimeSeconds)
+        {
+            return fallback;
+        }
+
+        return parsed;
     }
 }

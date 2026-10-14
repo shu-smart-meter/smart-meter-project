@@ -5,17 +5,13 @@ using SmartMeter.Model;
 
 namespace SmartMeter.Server.Services;
 
-// issues random expiring tokens and validates them by hash lookup
 public sealed class TokenService : ITokenService
 {
-    // hard bound on live tokens; pruned first, then new issues are refused
     private static readonly int MaximumTokens = 10000;
 
-    // hash of the token -> claims; the token value itself is never stored
     private readonly Dictionary<string, TokenClaims> _tokens = new();
     private readonly AuthConfig _config;
 
-    // guard the token map
     private readonly object _gate = new();
 
     public TokenService(AuthConfig config)
@@ -25,11 +21,8 @@ public sealed class TokenService : ITokenService
 
     public Task<TokenResponse?> IssueAsync(string meterId, CancellationToken cancellationToken = default)
     {
-        string token = AuthCodec.EncodeBase64Url(RandomNumberGenerator.GetBytes(32));
+        string token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
 
-        // expiry truncated to whole seconds: the auth ticket serializes
-        // expiresutc at second precision, so any stored claims and the
-        // ticket expire at the same instant
         DateTimeOffset expiresAt = DateTimeOffset.FromUnixTimeSeconds(
             DateTimeOffset.UtcNow.Add(_config.TokenLifetime).ToUnixTimeSeconds());
         TokenClaims claims = new TokenClaims { MeterId = meterId, ExpiresAt = expiresAt };
@@ -73,19 +66,9 @@ public sealed class TokenService : ITokenService
 
     public bool IsAdminToken(string token)
     {
-        byte[]? expected = _config.AdminTokenHash;
-
-        if (expected is null || token.Length == 0)
-        {
-            return false;
-        }
-
-        byte[] presented = SHA256.HashData(Encoding.UTF8.GetBytes(token));
-
-        return CryptographicOperations.FixedTimeEquals(expected, presented);
+        return AuthConfig.MatchesSecret(_config.AdminTokenHash, token);
     }
 
-    // remove expired entries so the map cannot grow without bound
     private void PruneExpired()
     {
         DateTimeOffset now = DateTimeOffset.UtcNow;
