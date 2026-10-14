@@ -21,14 +21,6 @@ public sealed class AuthController : BaseApiController
         [FromBody] MeterTokenRequest request,
         CancellationToken cancellationToken)
     {
-        if (!Request.IsHttps)
-        {
-            return new ObjectResult(ApiResponse.Failure(400, "HTTPS required"))
-            {
-                StatusCode = 400,
-            };
-        }
-
         TokenOutcome outcome = await _exchange.RequestTokenAsync(request, cancellationToken);
 
         if (outcome.Error is not null)

@@ -32,11 +32,6 @@ public sealed class MeterTokenAuthenticationHandler : AuthenticationHandler<Mete
             return AuthenticateResult.NoResult();
         }
 
-        if (!Request.IsHttps)
-        {
-            return AuthenticateResult.Fail("HTTPS required");
-        }
-
         string? token = BearerToken(header);
 
         if (token is null)

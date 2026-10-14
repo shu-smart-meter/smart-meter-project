@@ -10,11 +10,6 @@ public sealed class MeterAuthClient
 
     public MeterAuthClient(Uri baseUri, HttpClient http)
     {
-        if (baseUri.Scheme != Uri.UriSchemeHttps)
-        {
-            throw new ArgumentException("HTTPS is required for meter authentication.", nameof(baseUri));
-        }
-
         _baseUri = baseUri;
         _http = http;
     }
