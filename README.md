@@ -7,7 +7,7 @@ Simulation of a smart meter system for recording and managing domestic electrici
 - Windows 10 or 11 with PowerShell
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - Optional: Visual Studio or VS Code with the C# Dev Kit extension
-- Docker Desktop with Compose v2, if you want to run the container
+- [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/) with Compose v2 and Linux containers enabled, if you want to run the container
 
 ## Getting started
 
@@ -45,7 +45,15 @@ dotnet run --project .\src\SmartMeter.Server\SmartMeter.Server.csproj
 
 ## Run with Docker
 
-Start Docker Desktop, then run this from the directory that contains `compose.yaml`:
+Start Docker Desktop with Linux containers enabled. This project uses a Linux-based .NET image. Check the active
+container mode in PowerShell:
+
+```powershell
+docker info --format '{{.OSType}}'
+```
+
+The command must print `linux`. If it prints `windows`, switch Docker Desktop to Linux containers. Then run this
+from the directory that contains `compose.yaml`:
 
 ```powershell
 docker compose up --build
