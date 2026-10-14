@@ -1,0 +1,24 @@
+name: smart-meter
+
+services:
+    server:
+        build:
+            context: .
+            dockerfile: src/SmartMeter.Server/Dockerfile
+        ports:
+            - "5080:8080"
+        restart: unless-stopped
+        volumes:
+            # data survives a container restart and a rebuild
+            - smart-meter-data:/data
+        environment:
+            # storage lives on the named volume, outside the image
+            Storage__Path: /data/readings.json
+            Billing__UnitPricePerKwh: ${Billing__UnitPricePerKwh:-0.24}
+            # local defaults enable meter and admin authentication
+            SMART_METER_CLIENT_SECRET: ${SMART_METER_CLIENT_SECRET:-local-development-client-secret}
+            SMART_METER_ADMIN_TOKEN: ${SMART_METER_ADMIN_TOKEN:-local-development-admin-token}
+            SMART_METER_TOKEN_SECONDS: ${SMART_METER_TOKEN_SECONDS:-3600}
+
+volumes:
+    smart-meter-data:

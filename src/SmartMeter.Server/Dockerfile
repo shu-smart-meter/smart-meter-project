@@ -1,0 +1,27 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# restore on its own first so docker caches it; only reruns when the csproj changes
+COPY global.json Directory.Build.props ./
+COPY src/SmartMeter.Model/SmartMeter.Model.csproj src/SmartMeter.Model/
+COPY src/SmartMeter.Server/SmartMeter.Server.csproj src/SmartMeter.Server/
+RUN dotnet restore src/SmartMeter.Server/SmartMeter.Server.csproj
+
+COPY src/SmartMeter.Model/ src/SmartMeter.Model/
+COPY src/SmartMeter.Server/ src/SmartMeter.Server/
+RUN dotnet publish src/SmartMeter.Server/SmartMeter.Server.csproj -c Release -o /app --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+COPY --from=build /app .
+
+ENV ASPNETCORE_HTTP_PORTS=8080
+EXPOSE 8080
+
+# the compose file mounts the storage volume here; it needs to be writable
+# by the app user, which owns no part of the root-owned volume root
+RUN mkdir -p /data && chown app:app /data
+
+USER app
+
+ENTRYPOINT ["dotnet", "SmartMeter.Server.dll"]

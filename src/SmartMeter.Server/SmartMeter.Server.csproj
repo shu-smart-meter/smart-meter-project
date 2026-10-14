@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\SmartMeter.Model\SmartMeter.Model.csproj" />
+    </ItemGroup>
 
 </Project>
