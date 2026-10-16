@@ -1,32 +1,25 @@
 namespace SmartMeter.Client.Services;
 
-public class ReadingGenerator
+using SmartMeter.Model;
+
+public sealed class ReadingGenerator
 {
     private readonly Random _random = new Random();
-    private double _currentReading;
 
-    public ReadingGenerator(double startingReading)
+    public Reading GenerateReading(string meterId)
     {
-        _currentReading = startingReading;
-    }
+        decimal consumption = (decimal)_random.NextDouble() * 0.5m;
 
-    public MeterReading GenerateReading(string meterId)
-    {
-        double consumption = _random.NextDouble() * 0.5;
-
-        _currentReading += consumption;
-
-        return new MeterReading
+        return new Reading
         {
-            ReadingId = Guid.NewGuid(),
             MeterId = meterId,
-            Timestamp = DateTime.UtcNow,
-            Reading = _currentReading
+            Timestamp = DateTimeOffset.UtcNow,
+            KilowattHours = decimal.Round(consumption, 3)
         };
     }
 
     public int GetNextDelaySeconds()
     {
-        return _random.Next(1, 3);
+        return _random.Next(1, 11);
     }
 }
