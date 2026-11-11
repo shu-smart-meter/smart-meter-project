@@ -2,6 +2,8 @@
 
 Simulation of a smart meter system for recording and managing domestic electricity consumption.
 
+![CI](https://github.com/shu-smart-meter/smart-meter-project/actions/workflows/ci.yml/badge.svg)
+
 ## Requirements
 
 - Windows 10 or 11 with PowerShell
