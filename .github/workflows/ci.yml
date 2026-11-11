@@ -1,0 +1,57 @@
+name: Smart Meter Continuous Integration
+
+on:
+    push: #Nobody should be pushing to main, but good to add just in case!
+        branches:
+            - main
+    pull_request: #Main trigger for CI runs
+        branches:
+            - main
+    workflow_dispatch: #Mainly for testing, but also useful for manual runs if needed!
+
+permissions:
+    contents: read
+
+jobs:
+    net-build-and-test: #Job for building and testing the .NET solution
+        name: Build and Test (.NET)
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Repository Checkout
+              uses: actions/checkout@v4
+            
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v4
+              with:
+                    dotnet-version: 10.0.x
+
+            - name: Restore Dependencies
+              run: dotnet restore SmartMeter.sln
+
+            - name: Build Solution
+              run: dotnet build SmartMeter.sln --configuration Release --no-restore
+
+            - name: Run Automated Tests #Pending on said tests being added, will pass if no tests are found
+              run: dotnet test SmartMeter.sln --configuration Release --no-build --verbosity normal
+
+    docker-build: #Job for building the Docker image
+        name: Docker Build
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Repository Checkout
+              uses: actions/checkout@v4
+            
+            - name: Setup Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Build Docker Image
+              uses: docker/build-push-action@v6
+              with:
+                    context: .
+                    push: false
+                    tags: smartmeter:continuous-integration
+                    cache-from: type=gha
+                    cache-to: type=gha,mode=max
+
