@@ -1,6 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Metrics;
-using System.Runtime.CompilerServices;
+
 using SmartMeter.Client.Services;
 using SmartMeter.Model;
 
@@ -14,12 +12,15 @@ internal static class Program
         string meterId = args.Length > 0 ? args[0] : "Meter-001";
 
 
-        Uri serverUri = new("http://localhost:5080");
+        string serverUrl = Environment.GetEnvironmentVariable("SMART_METER_SERVER_URL") ?? "http://localhost:5080";
+
+        string clientSecret = Environment.GetEnvironmentVariable("SMART_METER_CLIENT_SECRET") ?? "local-development-client-secret";
+
+        Uri serverUri = new(serverUrl);
+
         using var httpClient = new HttpClient();
 
         var authClient = new MeterAuthClient(serverUri, httpClient);
-
-        string clientSecret = "smart-meter-secret";
 
         TokenResponse token = await authClient.RequestTokenAsync(meterId, clientSecret);
         await using var serverClient = new MeterServerClient(serverUri, meterId, token.AccessToken);
@@ -46,7 +47,7 @@ internal static class Program
             Console.WriteLine("Reading sent to server");
             int delaySeconds = generator.GetNextDelaySeconds();
             Console.WriteLine($"Next reading in {delaySeconds} seconds...");
-            Thread.Sleep(TimeSpan.FromSeconds(delaySeconds));
+            await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
         }
     }
 }

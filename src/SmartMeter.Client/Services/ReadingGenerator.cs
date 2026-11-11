@@ -20,6 +20,6 @@ public sealed class ReadingGenerator
 
     public int GetNextDelaySeconds()
     {
-        return _random.Next(1, 11);
+        return _random.Next(15, 61);
     }
 }
