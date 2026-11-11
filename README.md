@@ -4,6 +4,8 @@ Simulation of a smart meter system for recording and managing domestic electrici
 
 ![CI](https://github.com/shu-smart-meter/smart-meter-project/actions/workflows/ci.yml/badge.svg)
 
+![CodeQL](https://github.com/shu-smart-meter/smart-meter-project/actions/workflows/codeql.yml/badge.svg) - CodeQL analysis pending
+
 ## Requirements
 
 - Windows 10 or 11 with PowerShell
