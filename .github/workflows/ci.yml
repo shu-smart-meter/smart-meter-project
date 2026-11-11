@@ -50,6 +50,7 @@ jobs:
               uses: docker/build-push-action@v6
               with:
                     context: .
+                    file: ./src/SmartMeter.Server/Dockerfile
                     push: false
                     tags: smartmeter:continuous-integration
                     cache-from: type=gha
