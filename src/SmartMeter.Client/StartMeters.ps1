@@ -1,5 +1,7 @@
 $meters = @(
-    "METER001"
+    "METER001",
+    "METER002",
+    "METER003"
 )
 
 foreach ($meter in $meters)
