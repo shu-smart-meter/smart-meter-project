@@ -43,8 +43,18 @@ internal static class Program
             Console.WriteLine($"[{reading.Timestamp}] Meter ID: {reading.MeterId}, Consumption: {reading.KilowattHours:F2} kWh");
             Console.ResetColor();
 
-            await serverClient.SendReadingAsync(reading);
-            Console.WriteLine("Reading sent to server");
+            try
+            {
+                await serverClient.SendReadingAsync(reading);
+                Console.WriteLine("Reading sent to server");
+            }
+            catch (InvalidOperationException)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Unable to send reading. The server connection is unavailable");
+                Console.ResetColor();
+            }
+
             int delaySeconds = generator.GetNextDelaySeconds();
             Console.WriteLine($"Next reading in {delaySeconds} seconds...");
             await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
