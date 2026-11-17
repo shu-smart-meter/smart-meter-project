@@ -1,0 +1,16 @@
+
+apiVersion: 1
+
+datasources:
+  - name: Smart Meter API
+    uid: fg4kmcx4c7qwwc
+    type: yesoreyeram-infinity-datasource
+    access: proxy
+    isDefault: true
+    editable: true
+    jsonData:
+      auth_method: bearerToken
+      allowedHosts:
+        - http://server:8080
+    secureJsonData:
+      bearerToken: ${SMART_METER_ADMIN_TOKEN}
