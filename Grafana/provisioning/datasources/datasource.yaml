@@ -7,7 +7,7 @@ datasources:
     type: yesoreyeram-infinity-datasource
     access: proxy
     isDefault: true
-    editable: true
+    editable: false
     jsonData:
       auth_method: bearerToken
       allowedHosts:
