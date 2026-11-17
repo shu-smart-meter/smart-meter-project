@@ -13,7 +13,7 @@
     },
     "annotations": {
       "grafana.app/createdBy": "user:bg4klkahaxjpcd",
-      "grafana.app/folder": "fg4l5orsyeh34c",
+
       "grafana.app/managedBy": "classic-file-provisioning",
       "grafana.app/managerId": "Smart Meter Dashboards",
       "grafana.app/sourceChecksum": "5132213b51e3f657adda20875a9612b6",
