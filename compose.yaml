@@ -37,6 +37,7 @@ services:
             - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
             - ./grafana/smart-meter-dashboard.json:/etc/grafana/dashboards/smart-meter-dashboard.json:ro
             - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+            - ./grafana/smart-meter-comparison.json:/etc/grafana/dashboards/smart-meter-comparison.json:ro
 
 
 volumes:
