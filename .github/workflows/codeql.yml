@@ -1,0 +1,45 @@
+name: Smart Meter CodeQL Security Analysis
+
+on:
+    push: #Nobody should be pushing to main, but good to add just in case!
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+    schedule:
+        - cron: '0 0 * * *' #Run daily at midnight
+    workflow_dispatch: #Mainly for testing, but also useful for manual runs if needed!
+
+permissions:
+    contents: read
+    security-events: write #Needed for CodeQL analysis
+
+jobs:
+    analyze-code:
+        name: Analyze C# Code
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Repository Checkout
+              uses: actions/checkout@v4
+            
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v4
+              with:
+                    dotnet-version: 10.0.x
+            
+            - name: Initialize CodeQL
+              uses: github/codeql-action/init@v4
+              with:
+                    languages: csharp 
+                    build-mode: manual
+
+            - name: Restore Dependencies
+              run: dotnet restore SmartMeter.sln
+
+            - name: Build Solution
+              run: dotnet build SmartMeter.sln --configuration Release --no-restore
+
+            - name: Perform CodeQL Analysis
+              uses: github/codeql-action/analyze@v4
