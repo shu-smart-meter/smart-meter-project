@@ -4,6 +4,10 @@ Simulation of a smart meter system for recording and managing domestic electrici
 
 ![CI](https://github.com/shu-smart-meter/smart-meter-project/actions/workflows/ci.yml/badge.svg)
 
+![CodeQL](https://github.com/shu-smart-meter/smart-meter-project/actions/workflows/codeql.yml/badge.svg)
+
+[![Dependabot](https://img.shields.io/badge/Dependabot-security%20alerts-025E8C?logo=dependabot)](https://github.com/shu-smart-meter/smart-meter-project/security/dependabot)
+
 ## Requirements
 
 - Windows 10 or 11 with PowerShell
