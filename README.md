@@ -90,3 +90,48 @@ docker compose up --build
 
 These values apply only to the current PowerShell window. To remove an override and use the Compose default, run
 `Remove-Item Env:SMART_METER_CLIENT_SECRET` with the matching variable name.
+
+## Running the Smart Meter Clients
+
+The Smart Meter server and clients should be run in seperate PowerShell terminals. The server must be running before the meter clients
+are started for it to work.
+
+1. Start the Server
+
+    Open Powershell in the root and move to the server project
+
+    cd .\src\SmartMeter.Server\
+
+    Set the client secret
+
+    $env:SMART_METER_CLIENT_SECRET = "smart-meter-secret"
+
+    Start the server
+
+    dotnet run
+
+    Leave this terminal open while the clients are running. The server listens on http://localhost:5080
+
+2. Start the Clients
+
+    Open Powershell in the root and move to the client project
+
+    cd .\src\SmartMeter.Client\
+
+    Set the same client secret used by the server
+
+    $env:SMART_METER_CLIENT_SECRET = "smart-meter-secret"
+
+    Start the meter clients:
+
+    .\StartMeters.ps1
+
+    This script launches 12 configured Smart Meter clients in seperate PowerShell windows (METER001, METER002, METER003, ..., METER012)
+
+    Each client authenticates with the server, connects to it and begins generating and sending simulated readings
+
+    SMART_METER_CLIENT_SECRET must have the same value in the client and the server PowerShell terminals. You will receieve a 401 Unauthorized response if not
+
+3. Stopping the application
+
+    Use Ctrl+C in the server terminal to stop the server. For the individual clients, you can either use Ctrl+C or close their PowerShell windows.

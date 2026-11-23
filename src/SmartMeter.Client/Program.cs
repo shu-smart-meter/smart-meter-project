@@ -2,6 +2,8 @@
 using SmartMeter.Client.Services;
 using SmartMeter.Model;
 
+
+// Authenticates with server, starts connection and generates readings
 internal static class Program
 {
     private static async Task Main(string[] args)
@@ -9,6 +11,7 @@ internal static class Program
 
         var generator = new ReadingGenerator();
 
+        // Can be used as command line or via PowerShell script
         string meterId = args.Length > 0 ? args[0] : "Meter-001";
 
 
@@ -18,13 +21,15 @@ internal static class Program
 
         Uri serverUri = new(serverUrl);
 
-        using var httpClient = new HttpClient();
+        using var httpClient = new HttpClient(); // Establishes inital request to server
 
         var authClient = new MeterAuthClient(serverUri, httpClient);
 
+        // Auth logic
         TokenResponse token = await authClient.RequestTokenAsync(meterId, clientSecret);
         await using var serverClient = new MeterServerClient(serverUri, meterId, token.AccessToken);
 
+        // Establishes connection to server
         await serverClient.ConnectAsync();
 
         Console.ForegroundColor = ConsoleColor.Cyan;
