@@ -8,9 +8,9 @@ $meters = @(
     "METER007",
     "METER008",
     "METER009",
-    "METER0010",
-    "METER0011",
-    "METER0012"
+    "METER010",
+    "METER011",
+    "METER012"
 )
 
 foreach ($meter in $meters)
